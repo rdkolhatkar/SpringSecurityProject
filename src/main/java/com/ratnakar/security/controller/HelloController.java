@@ -14,7 +14,9 @@ public class HelloController {
         return "Hello World "+request.getSession().getId(); // 'request.getSession().getId()' wit this we can fetch the current session id.
         // session id will change for every new login and logout
     }
-
+    // By adding this 'spring-boot-starter-security' dependency in our project, we have enabled default login feature.
+    // When we will hit the URL 'http://localhost:8091/hello' on our browser then Spring Security will ask us for username and password before redirecting to the hello page.
+    // Default username for
     @GetMapping("/about")
     public String about(HttpServletRequest request) {
         return "Ratnakar "+request.getSession().getId();

@@ -1,6 +1,8 @@
 package com.ratnakar.security.controller;
 
 import com.ratnakar.security.model.Student;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,6 +27,11 @@ public class StudentController {
     @GetMapping("/get/Students")
     public List<Student> getStudents() {
         return studentList;
+    }
+    @GetMapping("/csrf-token")
+    public CsrfToken getCsrfToken(HttpServletRequest httpServletRequest){
+        // http servlet request object will have the session id and CSRF token in the attribute.
+        return (CsrfToken) httpServletRequest.getAttribute("_csrf");
     }
     @PostMapping("/add/Student")
     public void addStudent(@RequestBody Student student){

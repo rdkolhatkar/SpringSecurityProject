@@ -3,7 +3,7 @@ spring:
     name: SpringSecurityProject
 
   datasource:
-    url: jdbc:mysql://localhost:3306/
+    url: jdbc:mysql://localhost:3306/secure_db
     username: root
     password: Ratanlord@1409
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -18,8 +18,23 @@ spring:
       name: Ratnakar
       password: Ratanlord@1409
 
+# Server configuration
 server:
-  port: 8091
+  port: 8091   # Application will run on port 8091
+
+  servlet:
+    session:
+      cookie:
+        # SameSite attribute controls when browser sends the session cookie (JSESSIONID)
+
+        # STRICT:
+        # Cookie is sent ONLY when request originates from the same site.
+        # It will NOT be sent for:
+        # - Cross-site links
+        # - External redirects
+        # - Requests from other domains
+        # Provides highest CSRF protection.
+        same-site: STRICT
 
 logging:
   level:
