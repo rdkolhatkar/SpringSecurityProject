@@ -3,7 +3,7 @@ spring:
     name: SpringSecurityProject
 
   datasource:
-    url: jdbc:mysql://localhost:3306/secure_db
+    url: jdbc:mysql://localhost:3306/secure_vault
     username: root
     password: Ratanlord@1409
     driver-class-name: com.mysql.cj.jdbc.Driver

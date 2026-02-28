@@ -1,0 +1,19 @@
+-- Create database if it does not exist
+CREATE DATABASE IF NOT EXISTS secure_vault;
+
+-- Select the database
+USE secure_vault;
+
+-- Create users table
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY,
+    username TEXT NOT NULL,
+    password TEXT NOT NULL,
+    role TEXT NOT NULL
+);
+
+-- Insert sample records
+INSERT INTO users (id, username, password, role) VALUES
+    (1, 'admin_user', 'admin123', 'ADMIN'),
+    (2, 'normal_user', 'user123', 'USER'),
+    (3, 'manager_user', 'manager123', 'MANAGER');
