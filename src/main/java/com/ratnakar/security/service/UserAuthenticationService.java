@@ -1,5 +1,6 @@
 package com.ratnakar.security.service;
 
+import com.ratnakar.security.model.Users;
 import com.ratnakar.security.repository.AuthenticationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +14,11 @@ public class UserAuthenticationService implements UserDetailsService {
     AuthenticationRepository authenticationRepository;
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Users user = authenticationRepository.findByUsername(username);
+        if(user == null){
+            System.out.println("User Not Found");
+            throw new UsernameNotFoundException("User Not Found");
+        }
         return null;
     }
 }
