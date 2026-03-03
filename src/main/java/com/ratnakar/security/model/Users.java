@@ -11,6 +11,10 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+// No schema attribute — Hibernate generates plain "users" with no prefix.
+// Each database resolves the table via its JDBC URL context:
+//   MySQL:      jdbc:mysql://localhost:3306/secure_vault          → secure_vault.users
+//   PostgreSQL: jdbc:postgresql://...?currentSchema=SecureVault  → SecureVault.users
 @Table(name = "users")
 public class Users {
     @Id

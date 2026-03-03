@@ -3,7 +3,8 @@ spring:
     name: SpringSecurityProject
 
   # ---------------------------------------------------------------
-  # PRIMARY DataSource — MySQL (existing, unchanged)
+  # PRIMARY DataSource — MySQL
+  # Database: secure_vault
   # ---------------------------------------------------------------
   datasource:
     url: jdbc:mysql://localhost:3306/secure_vault
@@ -12,16 +13,11 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: true
-    # FIX: Disabled open-in-view. This is a REST API using STATELESS sessions,
-    # so keeping a JPA EntityManager open for the duration of an HTTP request
-    # (which is what open-in-view does) is unnecessary and wastes DB connections.
     open-in-view: false
-    # NOTE: 'hibernate.dialect' removed — Hibernate 6 auto-detects MySQL dialect
-    # from the live connection. Explicitly setting MySQLDialect caused a deprecation
-    # warning: "HHH90000025: MySQLDialect does not need to be specified explicitly".
+    # NOTE: hibernate.ddl-auto intentionally NOT set here.
+    # Managed as "none" in JpaConfig.java to prevent MySQL-dialect DDL
+    # (engine=InnoDB) from executing against PostgreSQL when MySQL is down.
 
   security:
     user:
@@ -29,18 +25,22 @@ spring:
       password: Ratanlord@1409
 
 # ---------------------------------------------------------------
-# FAILOVER DataSource — PostgreSQL (NEW)
-# Placed under 'app.*' (outside 'spring.*') to avoid Spring Boot's
-# strict key validation which rejects unknown keys under spring.*.
-# Read via @Value("${app.datasource.postgresql.*}") in DataSourceConfig.java.
+# FAILOVER DataSource — PostgreSQL
 # Database : VaultStorage
 # Schema   : SecureVault
-# Table    : users
+#
+# WHY options=-c search_path="SecureVault" instead of currentSchema=SecureVault:
+#   PostgreSQL schema names are case-sensitive when created with double quotes.
+#   Our schema was created as CREATE SCHEMA "SecureVault" (mixed case).
+#   currentSchema=SecureVault gets treated as lowercase "securevault" by the
+#   PostgreSQL JDBC driver internally, so it never matches "SecureVault".
+#   Using options=-c search_path="SecureVault" sends a raw SET search_path
+#   command to PostgreSQL at connection time, preserving exact casing.
 # ---------------------------------------------------------------
 app:
   datasource:
     postgresql:
-      url: jdbc:postgresql://localhost:5432/VaultStorage?currentSchema=SecureVault
+      url: jdbc:postgresql://localhost:5432/VaultStorage?options=-c%20search_path%3D%22SecureVault%22
       username: postgres
       password: Ratanlord@1409
       driver-class-name: org.postgresql.Driver
@@ -71,7 +71,6 @@ logging:
         type:
           descriptor:
             sql: TRACE
-    # NEW — log failover routing decisions
     com:
       ratnakar:
         security:

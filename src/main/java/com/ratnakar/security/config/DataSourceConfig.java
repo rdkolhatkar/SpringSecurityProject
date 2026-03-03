@@ -12,6 +12,7 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -26,13 +27,19 @@ import java.util.Map;
  * If MySQL is unavailable (connection fails), the router transparently
  * falls back to PostgreSQL — no application code change is needed.
  *
- * WHY manual HikariConfig instead of @ConfigurationProperties + DataSourceBuilder?
- *   HikariCP requires the property name 'jdbcUrl' (not 'url') when driverClassName
- *   is also set. Spring Boot's DataSourceBuilder uses 'url' internally and translates
- *   it for simple cases, but when combined with a custom RoutingDataSource the
- *   translation is skipped and HikariCP throws "jdbcUrl is required with driverClassName".
- *   Reading values explicitly with @Value and constructing HikariConfig manually
- *   avoids this entirely.
+ * WHY initializationFailTimeout = -1 on MySQL?
+ *   Disables HikariCP's eager pool validation at startup.
+ *   If MySQL is down when the app starts, HikariCP would otherwise throw
+ *   PoolInitializationException and crash the entire app context.
+ *   With -1, the bean is created successfully regardless of MySQL state.
+ *
+ * WHY SET search_path on every PostgreSQL connection?
+ *   PostgreSQL schema names are case-sensitive when created with double quotes.
+ *   Our schema is "SecureVault" (mixed case). The JDBC URL option
+ *   currentSchema=SecureVault gets lowercased internally by the driver.
+ *   Explicitly running SET search_path TO "SecureVault" on each connection
+ *   guarantees the exact casing is preserved and unqualified table names
+ *   like "users" resolve to "SecureVault".users correctly.
  */
 @Configuration
 public class DataSourceConfig {
@@ -95,34 +102,39 @@ public class DataSourceConfig {
 
     // ---------------------------------------------------------------
     // MySQL HikariCP DataSource bean
-    // Manually constructs HikariConfig to ensure 'jdbcUrl' is set
-    // correctly (HikariCP requires 'jdbcUrl', not 'url').
     // ---------------------------------------------------------------
     @Bean(name = "mysqlDataSource")
     public DataSource mysqlDataSource() {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(mysqlUrl);                        // HikariCP needs jdbcUrl
+        config.setJdbcUrl(mysqlUrl);
         config.setUsername(mysqlUsername);
         config.setPassword(mysqlPassword);
         config.setDriverClassName(mysqlDriverClassName);
         config.setPoolName("MySQLHikariPool");
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
-        config.setConnectionTimeout(3000);                  // 3s — fail fast for failover
+        config.setConnectionTimeout(3000);
         config.setValidationTimeout(2000);
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
         config.setConnectionTestQuery("SELECT 1");
+        // -1 = do not fail at startup if MySQL is unreachable
+        config.setInitializationFailTimeout(-1);
         return new HikariDataSource(config);
     }
 
     // ---------------------------------------------------------------
     // PostgreSQL HikariCP DataSource bean
+    //
+    // WHY connectionInitSql:
+    //   Sets search_path on EVERY new connection from the pool.
+    //   This is the most reliable way to ensure "SecureVault" schema
+    //   (exact case) is always active, regardless of JDBC URL parsing.
     // ---------------------------------------------------------------
     @Bean(name = "postgresqlDataSource")
     public DataSource postgresqlDataSource() {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(postgresqlUrl);                   // HikariCP needs jdbcUrl
+        config.setJdbcUrl(postgresqlUrl);
         config.setUsername(postgresqlUsername);
         config.setPassword(postgresqlPassword);
         config.setDriverClassName(postgresqlDriverClassName);
@@ -134,6 +146,11 @@ public class DataSourceConfig {
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
         config.setConnectionTestQuery("SELECT 1");
+        config.setInitializationFailTimeout(0);
+        // KEY FIX: Runs this SQL on every new connection from the pool.
+        // Guarantees "SecureVault" schema (exact mixed-case) is always the
+        // active search path — unqualified "users" resolves to "SecureVault".users
+        config.setConnectionInitSql("SET search_path TO \"SecureVault\"");
         return new HikariDataSource(config);
     }
 
@@ -154,7 +171,6 @@ public class DataSourceConfig {
         targetDataSources.put(DataSourceType.POSTGRESQL,  postgresqlDataSource);
 
         routingDataSource.setTargetDataSources(targetDataSources);
-        // Default route is always MySQL
         routingDataSource.setDefaultTargetDataSource(mysqlDataSource);
         routingDataSource.afterPropertiesSet();
 
@@ -163,10 +179,6 @@ public class DataSourceConfig {
 
     // ---------------------------------------------------------------
     // FailoverRoutingDataSource
-    //
-    // Extends AbstractRoutingDataSource.
-    // getConnection() tries MySQL first; on SQLException it falls over
-    // to PostgreSQL automatically.
     // ---------------------------------------------------------------
     static class FailoverRoutingDataSource extends AbstractRoutingDataSource {
 
@@ -179,17 +191,12 @@ public class DataSourceConfig {
             this.postgresqlDataSource = postgresqlDataSource;
         }
 
-        // Returns the routing key for the current thread.
-        // If nothing is set explicitly, MYSQL is the default route.
         @Override
         protected Object determineCurrentLookupKey() {
             DataSourceType type = DataSourceContextHolder.getDataSourceType();
             return (type != null) ? type : DataSourceType.MYSQL;
         }
 
-        // Override getConnection() to implement failover:
-        // 1. Try MySQL (primary)
-        // 2. If SQLException → switch to PostgreSQL, log warning, retry
         @Override
         public Connection getConnection() throws SQLException {
             try {
@@ -215,12 +222,10 @@ public class DataSourceConfig {
                             postgresqlException);
                 }
             } finally {
-                // Always clean ThreadLocal to prevent memory leaks across pooled threads
                 DataSourceContextHolder.clearDataSourceType();
             }
         }
 
-        // Overload: getConnection(username, password) — same failover logic
         @Override
         public Connection getConnection(String username, String password) throws SQLException {
             try {

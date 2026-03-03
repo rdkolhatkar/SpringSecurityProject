@@ -37,3 +37,8 @@ INSERT INTO users (id, username, password, role) VALUES
     (3, 'manager_user', 'manager123', 'MANAGER');
 
 TRUNCATE TABLE users;
+
+
+net stop MySQL80
+
+net start MySQL80
