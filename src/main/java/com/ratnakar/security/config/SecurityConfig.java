@@ -17,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
@@ -115,7 +116,12 @@ public class SecurityConfig {
 
     // By default Spring Security uses an interface called as 'UserDetailsService'.
     // In Spring Boot Security, UserDetailsService is used to load user-specific data (username, password, roles) from a data source during authentication.
-    @Bean
+    // OPTIMIZATION NOTE: The InMemoryUserDetailsManager bean below conflicts with the DB-backed
+    // UserDetailsService (UserAuthenticationService). Spring will pick one — keeping both causes
+    // ambiguity. The @Bean below is intentionally left commented out so that
+    // UserAuthenticationService (which loads from DB) is used as the single UserDetailsService.
+    // Un-comment ONLY if you want to test with in-memory users and comment out UserAuthenticationService.
+//    @Bean
     public UserDetailsService userDetailsService(){
         UserDetails user = User
                 .withDefaultPasswordEncoder()
@@ -140,9 +146,17 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider(){
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
+        // OPTIMIZATION: setUserDetailsService is wired here explicitly to the DB-backed service
+        // to avoid Spring picking the wrong UserDetailsService bean when multiple are present.
+        daoAuthenticationProvider.setUserDetailsService(userDetailsAuthenticationService);
         //daoAuthenticationProvider.setUserDetailsPasswordService(userDetailsAuthenticationService);
-        daoAuthenticationProvider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+        //daoAuthenticationProvider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+        daoAuthenticationProvider.setPasswordEncoder(new BCryptPasswordEncoder(12));
         return daoAuthenticationProvider;
     }
 
+    @Bean
+    public BCryptPasswordEncoder passwordEncoder(){
+        return new BCryptPasswordEncoder(12);
+    }
 }

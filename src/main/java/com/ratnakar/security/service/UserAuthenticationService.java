@@ -1,5 +1,6 @@
 package com.ratnakar.security.service;
 
+import com.ratnakar.security.model.UserPrincipal;
 import com.ratnakar.security.model.Users;
 import com.ratnakar.security.repository.AuthenticationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,6 @@ public class UserAuthenticationService implements UserDetailsService {
             System.out.println("User Not Found");
             throw new UsernameNotFoundException("User Not Found");
         }
-        return null;
+        return new UserPrincipal(user);
     }
 }

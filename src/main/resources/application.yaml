@@ -2,6 +2,9 @@ spring:
   application:
     name: SpringSecurityProject
 
+  # ---------------------------------------------------------------
+  # PRIMARY DataSource — MySQL (existing, unchanged)
+  # ---------------------------------------------------------------
   datasource:
     url: jdbc:mysql://localhost:3306/secure_vault
     username: root
@@ -12,11 +15,35 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+    # FIX: Disabled open-in-view. This is a REST API using STATELESS sessions,
+    # so keeping a JPA EntityManager open for the duration of an HTTP request
+    # (which is what open-in-view does) is unnecessary and wastes DB connections.
+    open-in-view: false
+    # NOTE: 'hibernate.dialect' removed — Hibernate 6 auto-detects MySQL dialect
+    # from the live connection. Explicitly setting MySQLDialect caused a deprecation
+    # warning: "HHH90000025: MySQLDialect does not need to be specified explicitly".
 
   security:
     user:
       name: Ratnakar
       password: Ratanlord@1409
+
+# ---------------------------------------------------------------
+# FAILOVER DataSource — PostgreSQL (NEW)
+# Placed under 'app.*' (outside 'spring.*') to avoid Spring Boot's
+# strict key validation which rejects unknown keys under spring.*.
+# Read via @Value("${app.datasource.postgresql.*}") in DataSourceConfig.java.
+# Database : VaultStorage
+# Schema   : SecureVault
+# Table    : users
+# ---------------------------------------------------------------
+app:
+  datasource:
+    postgresql:
+      url: jdbc:postgresql://localhost:5432/VaultStorage?currentSchema=SecureVault
+      username: postgres
+      password: Ratanlord@1409
+      driver-class-name: org.postgresql.Driver
 
 # Server configuration
 server:
@@ -44,3 +71,8 @@ logging:
         type:
           descriptor:
             sql: TRACE
+    # NEW — log failover routing decisions
+    com:
+      ratnakar:
+        security:
+          config: DEBUG

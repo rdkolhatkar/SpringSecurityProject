@@ -25,6 +25,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'com.mysql:mysql-connector-j'
 	implementation 'org.postgresql:postgresql'
+	// NEW: HikariCP is included transitively via spring-boot-starter-data-jpa,
+	// but listed explicitly here for clarity since we are configuring two
+	// HikariCP pools (MySQL primary + PostgreSQL failover) in DataSourceConfig.
+	implementation 'com.zaxxer:HikariCP'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'

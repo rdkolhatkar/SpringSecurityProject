@@ -1,0 +1,7 @@
+What is BCrypt?
+-> BCrypt is a password hashing algorithm used to securely store passwords.
+   Instead of saving your real password (like admin123) in the database, BCrypt converts it into a hashed (encrypted-looking) string that cannot be reversed easily.
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+BCrypt Generator Websites:
+-> https://bcrypt-generator.com/
+-> https://bcrypt.online/

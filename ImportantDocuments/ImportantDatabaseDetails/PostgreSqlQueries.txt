@@ -1,0 +1,34 @@
+-- ============================================================
+-- PostgreSQL Failover Database Setup
+-- Database  : VaultStorage
+-- Schema    : SecureVault
+-- Table     : users
+-- ============================================================
+
+-- Step 1: Create the database (run this as superuser / postgres role)
+-- NOTE: In PostgreSQL, CREATE DATABASE cannot run inside a transaction block.
+--       Run this command separately in psql or pgAdmin before running the rest.
+CREATE DATABASE "VaultStorage";
+
+-- Step 2: Connect to the newly created database
+-- In psql: \c VaultStorage
+-- In pgAdmin: switch to VaultStorage database and run remaining SQL
+
+-- Step 3: Create schema
+CREATE SCHEMA IF NOT EXISTS "SecureVault";
+
+-- Step 4: Create users table inside SecureVault schema
+CREATE TABLE IF NOT EXISTS "SecureVault"."users" (
+    id       INTEGER      PRIMARY KEY,
+    username VARCHAR(255) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    role     VARCHAR(50)  NOT NULL DEFAULT 'USER'
+);
+
+-- Step 5: Insert sample records (mirrors MySQL seed data)
+INSERT INTO "SecureVault"."users" (id, username, password, role) VALUES
+    (1, 'admin_user',   'admin123',   'ADMIN'),
+    (2, 'normal_user',  'user123',    'USER'),
+    (3, 'manager_user', 'manager123', 'MANAGER')
+ON CONFLICT (id) DO NOTHING;
+-- ON CONFLICT DO NOTHING ensures re-running the script does not throw duplicate key errors
