@@ -1,70 +1,150 @@
 package com.ratnakar.security.config;
 
+/*
+ =============================================================================
+ IMPORTS SECTION EXPLAINED
+ =============================================================================
+*/
+
 import com.ratnakar.security.config.DataSourceConfig.DataSourceContextHolder;
+// DataSourceContextHolder is an inner static class inside DataSourceConfig.
+// It uses ThreadLocal to store which DataSource (MYSQL or POSTGRESQL)
+// should be used for the current request/thread.
+
 import com.ratnakar.security.config.DataSourceConfig.DataSourceType;
+// Enum defined inside DataSourceConfig.
+// Used as a key to identify which DB to use (MYSQL or POSTGRESQL).
+
 import com.ratnakar.security.model.Users;
+// This is your JPA Entity class that represents the "users" table in DB.
+
 import com.ratnakar.security.repository.AuthenticationRepository;
+// This is your Spring Data JPA repository interface.
+// It allows CRUD operations without writing SQL manually.
+
 import org.springframework.beans.factory.annotation.Autowired;
+// @Autowired tells Spring to inject the required bean automatically.
+
 import org.springframework.beans.factory.annotation.Qualifier;
+// @Qualifier is used when multiple beans of same type exist.
+// Here we specifically inject mysqlDataSource.
+
 import org.springframework.boot.CommandLineRunner;
+// CommandLineRunner is a Spring Boot interface.
+// Any class implementing this will run automatically after application starts.
+
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+// BCryptPasswordEncoder is a password hashing class from Spring Security.
+// It hashes passwords securely before storing in DB.
+
 import org.springframework.stereotype.Component;
+// @Component makes this class a Spring Bean.
+// Spring automatically detects it during component scanning.
 
 import javax.sql.DataSource;
+// DataSource represents a database connection pool.
+
 import java.sql.Connection;
+// Represents a single database connection.
 
 /**
+ * ============================================================================
  * DataInitializer
+ * ============================================================================
  *
- * Runs once on application startup (CommandLineRunner).
- * Seeds the users table with BCrypt-hashed passwords.
+ * This class runs automatically when the Spring Boot application starts.
  *
- * FAILOVER AWARE:
- * Before seeding, checks if MySQL is actually reachable.
- * If MySQL is down, seeding is skipped entirely — the app starts normally
- * and will seed on the next restart when MySQL is available.
- * This prevents DataInitializer from accidentally running against PostgreSQL
- * (which may already have its own seed data from postgresql_setup.sql).
+ * HOW?
+ * Because it implements CommandLineRunner.
+ *
+ * WHAT IT DOES?
+ * - Checks if MySQL is available.
+ * - If MySQL is up → seeds initial users into DB.
+ * - If MySQL is down → skips seeding (prevents accidental seeding in PostgreSQL).
+ *
+ * WHY THIS IS IMPORTANT?
+ * Because your application supports FAILOVER (MySQL → PostgreSQL).
+ * We do NOT want seed data to be inserted into failover DB accidentally.
+ *
+ * @Component → Registers this class as a Spring Bean.
  */
 @Component
 public class DataInitializer implements CommandLineRunner {
 
+    /*
+     =========================================================================
+     DEPENDENCY INJECTION SECTION
+     =========================================================================
+    */
+
     @Autowired
     private AuthenticationRepository authenticationRepository;
+    // Injects Spring Data JPA repository.
+    // Used to save users into database.
 
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
+    // Injects BCryptPasswordEncoder bean from SecurityConfig.
+    // Used to hash passwords securely before storing in DB.
 
     @Autowired
     @Qualifier("mysqlDataSource")
     private DataSource mysqlDataSource;
+    // Injects specifically the MySQL DataSource bean.
+    // We do NOT use routingDataSource here.
+    // We want raw MySQL connection to check availability.
 
+    /*
+     =========================================================================
+     run() METHOD
+     =========================================================================
+     This method runs automatically when application starts.
+     Because this class implements CommandLineRunner.
+    */
     @Override
     public void run(String... args) {
-        // Only seed when MySQL (primary DB) is reachable.
-        // Skip silently if MySQL is down — prevents seeding into PostgreSQL failover.
+
+        // Step 1: Check if MySQL is reachable.
         if (!isMySQLReachable()) {
             System.out.println("[DataInitializer] MySQL is unavailable — seeding skipped. " +
                     "Restart app when MySQL is up to seed users.");
-            return;
+            return; // Stop execution if MySQL is down.
         }
 
         try {
-            // Explicitly route seed operations to MySQL
+            /*
+             IMPORTANT:
+             We explicitly tell routing mechanism to use MYSQL.
+             This ensures seed data goes ONLY to MySQL.
+            */
             DataSourceContextHolder.setDataSourceType(DataSourceType.MYSQL);
 
-            // Seed admin_user if not already present
+            /*
+             ------------------------------------------------------------------
+             Seed admin_user
+             ------------------------------------------------------------------
+            */
             if (!authenticationRepository.existsById(1)) {
                 Users admin = new Users();
                 admin.setId(1);
                 admin.setUsername("admin_user");
+
+                // Password is encoded using BCrypt.
+                // Never store plain text passwords in DB.
                 admin.setPassword(passwordEncoder.encode("admin123"));
+
                 admin.setRole("ADMIN");
+
                 authenticationRepository.save(admin);
+
                 System.out.println("[DataInitializer] Seeded user: admin_user");
             }
 
-            // Seed normal_user if not already present
+            /*
+             ------------------------------------------------------------------
+             Seed normal_user
+             ------------------------------------------------------------------
+            */
             if (!authenticationRepository.existsById(2)) {
                 Users user = new Users();
                 user.setId(2);
@@ -75,7 +155,11 @@ public class DataInitializer implements CommandLineRunner {
                 System.out.println("[DataInitializer] Seeded user: normal_user");
             }
 
-            // Seed manager_user if not already present
+            /*
+             ------------------------------------------------------------------
+             Seed manager_user
+             ------------------------------------------------------------------
+            */
             if (!authenticationRepository.existsById(3)) {
                 Users manager = new Users();
                 manager.setId(3);
@@ -91,18 +175,23 @@ public class DataInitializer implements CommandLineRunner {
         } catch (Exception e) {
             System.err.println("[DataInitializer] Seeding failed: " + e.getMessage());
         } finally {
+            // Always clear ThreadLocal after use.
+            // Prevents memory leaks in long running apps.
             DataSourceContextHolder.clearDataSourceType();
         }
     }
 
-    /**
-     * Checks if MySQL is reachable by attempting a direct connection.
-     * Uses the raw mysqlDataSource (not the RoutingDataSource) to avoid
-     * triggering failover logic during this health check.
-     */
+    /*
+     =========================================================================
+     MySQL Health Check Method
+     =========================================================================
+     This method directly checks MySQL availability.
+    */
     private boolean isMySQLReachable() {
+
         try (Connection conn = mysqlDataSource.getConnection()) {
-            return conn.isValid(2); // 2 second timeout
+            // isValid(2) → checks connection within 2 seconds timeout.
+            return conn.isValid(2);
         } catch (Exception e) {
             return false;
         }
