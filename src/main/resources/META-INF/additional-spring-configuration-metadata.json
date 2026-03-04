@@ -1,0 +1,24 @@
+{
+  "properties": [
+    {
+      "name": "app.datasource.postgresql.url",
+      "type": "java.lang.String",
+      "description": "JDBC URL for the PostgreSQL failover datasource."
+    },
+    {
+      "name": "app.datasource.postgresql.username",
+      "type": "java.lang.String",
+      "description": "Username for the PostgreSQL failover datasource."
+    },
+    {
+      "name": "app.datasource.postgresql.password",
+      "type": "java.lang.String",
+      "description": "Password for the PostgreSQL failover datasource."
+    },
+    {
+      "name": "app.datasource.postgresql.driver-class-name",
+      "type": "java.lang.String",
+      "description": "JDBC driver class for the PostgreSQL failover datasource."
+    }
+  ]
+}

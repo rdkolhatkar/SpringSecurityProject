@@ -40,7 +40,7 @@ spring:
 app:
   datasource:
     postgresql:
-      url: jdbc:postgresql://localhost:5432/VaultStorage?options=-c%20search_path%3D%22SecureVault%22
+      url: jdbc:postgresql://localhost:5432/VaultStorage
       username: postgres
       password: Ratanlord@1409
       driver-class-name: org.postgresql.Driver

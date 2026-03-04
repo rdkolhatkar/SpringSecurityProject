@@ -6,6 +6,8 @@ package com.ratnakar.security.config;
  =============================================================================
 */
 
+import com.ratnakar.security.model.Users;
+import com.ratnakar.security.repository.AuthenticationRepository;
 import com.ratnakar.security.config.DataSourceConfig.DataSourceContextHolder;
 // DataSourceContextHolder is an inner static class inside DataSourceConfig.
 // It uses ThreadLocal to store which DataSource (MYSQL or POSTGRESQL)
@@ -15,10 +17,8 @@ import com.ratnakar.security.config.DataSourceConfig.DataSourceType;
 // Enum defined inside DataSourceConfig.
 // Used as a key to identify which DB to use (MYSQL or POSTGRESQL).
 
-import com.ratnakar.security.model.Users;
 // This is your JPA Entity class that represents the "users" table in DB.
 
-import com.ratnakar.security.repository.AuthenticationRepository;
 // This is your Spring Data JPA repository interface.
 // It allows CRUD operations without writing SQL manually.
 

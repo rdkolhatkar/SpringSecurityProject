@@ -1,90 +1,28 @@
 package com.ratnakar.security.config;
 
-/*
- =============================================================================
- IMPORT SECTION EXPLAINED
- =============================================================================
-*/
-
 import com.zaxxer.hikari.HikariConfig;
-// HikariConfig is configuration class for HikariCP connection pool.
-
 import com.zaxxer.hikari.HikariDataSource;
-// HikariDataSource is actual DataSource implementation provided by HikariCP.
-// It manages database connections efficiently.
-
 import org.springframework.beans.factory.annotation.Qualifier;
-// Used when multiple beans of same type exist.
-// We use it to specify which DataSource bean to inject.
-
 import org.springframework.beans.factory.annotation.Value;
-// @Value reads values from application.properties file.
-
 import org.springframework.context.annotation.Bean;
-// @Bean tells Spring to create and manage this object in IoC container.
-
 import org.springframework.context.annotation.Configuration;
-// @Configuration marks this class as Spring configuration class.
-
 import org.springframework.context.annotation.Primary;
-// @Primary tells Spring: if multiple beans of same type exist,
-// use this one by default.
-
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
-// AbstractRoutingDataSource is a special Spring class.
-// It allows dynamic switching between multiple DataSources at runtime.
 
 import javax.sql.DataSource;
-// Standard Java interface representing a database connection source.
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- =============================================================================
- DataSourceConfig
- =============================================================================
-
- This is one of the most important configuration classes in your project.
-
- WHAT THIS CLASS DOES:
- ----------------------
- 1. Creates MySQL DataSource (Primary DB)
- 2. Creates PostgreSQL DataSource (Failover DB)
- 3. Creates Routing DataSource that switches between them
- 4. Implements automatic FAILOVER logic
-
- WHY WE NEED THIS?
- ------------------
- Normally Spring Boot supports only ONE DataSource.
- But in real enterprise applications:
- - We may want high availability
- - We may want backup DB
- - We may want read/write separation
-
- This class makes your application PRODUCTION LEVEL.
-
- @Configuration:
- ---------------
- Tells Spring:
- "This class contains @Bean methods.
- Create and manage those beans."
- */
 @Configuration
 public class DataSourceConfig {
 
     /*
      =========================================================================
-     ENUM USED AS ROUTING KEY
+     ENUM — ROUTING KEY
      =========================================================================
-
-     This enum acts as a KEY to identify which DataSource to use.
-
-     Think of it like:
-     MYSQL → Primary Database
-     POSTGRESQL → Backup Database
+     Identifies which DataSource to use for the current thread.
     */
     public enum DataSourceType {
         MYSQL, POSTGRESQL
@@ -94,17 +32,8 @@ public class DataSourceConfig {
      =========================================================================
      THREAD LOCAL CONTEXT HOLDER
      =========================================================================
-
-     What is ThreadLocal?
-     ---------------------
-     ThreadLocal stores data per thread.
-
-     Why needed?
-     -----------
-     Each HTTP request runs in separate thread.
-     We must remember which DB that thread should use.
-
-     This prevents cross-request data leakage.
+     Stores which DB the current thread should use.
+     Each HTTP request runs in its own thread — this prevents cross-request leakage.
     */
     public static class DataSourceContextHolder {
 
@@ -119,21 +48,14 @@ public class DataSourceConfig {
         }
 
         public static void clearDataSourceType() {
-            CONTEXT.remove(); // Important to prevent memory leaks
+            CONTEXT.remove();
         }
     }
 
     /*
      =========================================================================
-     MYSQL PROPERTIES
+     MYSQL PROPERTIES — from application.yaml spring.datasource.*
      =========================================================================
-
-     These values come from application.properties:
-
-     spring.datasource.url=
-     spring.datasource.username=
-     spring.datasource.password=
-     spring.datasource.driver-class-name=
     */
     @Value("${spring.datasource.url}")
     private String mysqlUrl;
@@ -149,11 +71,8 @@ public class DataSourceConfig {
 
     /*
      =========================================================================
-     POSTGRESQL PROPERTIES
+     POSTGRESQL PROPERTIES — from application.yaml app.datasource.postgresql.*
      =========================================================================
-
-     These come from:
-     app.datasource.postgresql.*
     */
     @Value("${app.datasource.postgresql.url}")
     private String postgresqlUrl;
@@ -171,18 +90,8 @@ public class DataSourceConfig {
      =========================================================================
      MYSQL DATASOURCE BEAN
      =========================================================================
-
-     @Bean(name = "mysqlDataSource")
-     This creates a bean with specific name.
-
-     HikariCP is used as connection pool.
-
-     WHAT IS CONNECTION POOL?
-     --------------------------
-     Instead of opening new DB connection for every request,
-     we keep some ready connections in memory.
-
-     This improves performance drastically.
+     Primary database.
+     setInitializationFailTimeout(-1) → app won't crash if MySQL is down at startup.
     */
     @Bean(name = "mysqlDataSource")
     public DataSource mysqlDataSource() {
@@ -195,30 +104,18 @@ public class DataSourceConfig {
         config.setDriverClassName(mysqlDriverClassName);
 
         config.setPoolName("MySQLHikariPool");
-
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
-
         config.setConnectionTimeout(3000);
         config.setValidationTimeout(2000);
-
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
-
         config.setConnectionTestQuery("SELECT 1");
 
         /*
-         VERY IMPORTANT:
-         ----------------
-         setInitializationFailTimeout(-1)
-
-         If MySQL is DOWN at startup:
-         - HikariCP will NOT fail application startup.
-
-         Without this:
-         Application would crash.
-
-         This makes failover possible.
+         CRITICAL:
+         -1 means: if MySQL is DOWN at startup, don't fail — just start with empty pool.
+         This makes failover possible from the very first request.
         */
         config.setInitializationFailTimeout(-1);
 
@@ -229,8 +126,11 @@ public class DataSourceConfig {
      =========================================================================
      POSTGRESQL DATASOURCE BEAN
      =========================================================================
+     Failover database.
 
-     Used as FAILOVER database.
+     connectionInitSql sets the schema on every new connection.
+     This is the correct way to handle mixed-case PostgreSQL schema names
+     because currentSchema= in the JDBC URL lowercases the name internally.
     */
     @Bean(name = "postgresqlDataSource")
     public DataSource postgresqlDataSource() {
@@ -243,29 +143,21 @@ public class DataSourceConfig {
         config.setDriverClassName(postgresqlDriverClassName);
 
         config.setPoolName("PostgreSQLHikariPool");
-
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
-
         config.setConnectionTimeout(5000);
         config.setValidationTimeout(2000);
-
         config.setIdleTimeout(600000);
         config.setMaxLifetime(1800000);
-
         config.setConnectionTestQuery("SELECT 1");
 
         config.setInitializationFailTimeout(0);
 
         /*
-         CRITICAL FIX FOR POSTGRES:
-
-         PostgreSQL schema names are case sensitive.
-
-         Without this:
-         "SecureVault" may become "securevault"
-
-         This ensures correct schema is used ALWAYS.
+         CRITICAL FIX FOR POSTGRESQL SCHEMA:
+         Sends SET search_path at connection time.
+         Preserves exact mixed-case schema name "SecureVault".
+         Do NOT use currentSchema= in JDBC URL — it lowercases the name.
         */
         config.setConnectionInitSql("SET search_path TO \"SecureVault\"");
 
@@ -274,17 +166,10 @@ public class DataSourceConfig {
 
     /*
      =========================================================================
-     ROUTING DATASOURCE
+     ROUTING DATASOURCE BEAN
      =========================================================================
-
-     This is the most important bean.
-
-     @Primary:
-     ---------
-     If multiple DataSource beans exist,
-     Spring will use this one by default.
-
-     JPA will use this bean automatically.
+     @Primary → JPA and Spring will use this DataSource by default.
+     Delegates to FailoverRoutingDataSource which handles MySQL → PostgreSQL switching.
     */
     @Primary
     @Bean(name = "routingDataSource")
@@ -296,14 +181,11 @@ public class DataSourceConfig {
                 new FailoverRoutingDataSource(mysqlDataSource, postgresqlDataSource);
 
         Map<Object, Object> targetDataSources = new HashMap<>();
-
         targetDataSources.put(DataSourceType.MYSQL, mysqlDataSource);
         targetDataSources.put(DataSourceType.POSTGRESQL, postgresqlDataSource);
 
         routingDataSource.setTargetDataSources(targetDataSources);
-
         routingDataSource.setDefaultTargetDataSource(mysqlDataSource);
-
         routingDataSource.afterPropertiesSet();
 
         return routingDataSource;
@@ -311,15 +193,29 @@ public class DataSourceConfig {
 
     /*
      =========================================================================
-     CUSTOM ROUTING CLASS
+     FAILOVER ROUTING DATASOURCE
      =========================================================================
-
      Extends AbstractRoutingDataSource.
 
-     AbstractRoutingDataSource internally calls:
-     determineCurrentLookupKey()
+     TWO responsibilities:
+     1. determineCurrentLookupKey() → tells Spring which DS key to use
+        (used by AbstractRoutingDataSource internally for JPA operations)
 
-     Based on returned key, it chooses DataSource.
+     2. getConnection() / getConnection(user, pass) → actual failover logic
+        (tries MySQL first, falls back to PostgreSQL on failure)
+
+     IMPORTANT DESIGN DECISION:
+     ---------------------------
+     We do NOT clear ThreadLocal in finally inside getConnection().
+
+     Why?
+     Because JPA calls determineCurrentLookupKey() AFTER getConnection().
+     If we clear in finally, the key becomes null and routes back to MySQL
+     even when we just failed over to PostgreSQL.
+
+     ThreadLocal is cleared by:
+     - DataInitializer (after seeding)
+     - Request completion (via filter — recommended for production)
     */
     static class FailoverRoutingDataSource extends AbstractRoutingDataSource {
 
@@ -333,55 +229,101 @@ public class DataSourceConfig {
         }
 
         /*
-         This method tells Spring which DataSource key to use.
+         Called by AbstractRoutingDataSource to pick the target DataSource.
+         Returns the key stored in ThreadLocal.
+         Defaults to MYSQL if nothing is set.
         */
         @Override
         protected Object determineCurrentLookupKey() {
-
             DataSourceType type = DataSourceContextHolder.getDataSourceType();
-
             return (type != null) ? type : DataSourceType.MYSQL;
         }
 
         /*
-         OVERRIDDEN getConnection()
+         -------------------------------------------------------------------------
+         FIX 1: getConnection() — no-arg version
+         -------------------------------------------------------------------------
+         BEFORE (broken):
+         - Set MYSQL in context
+         - Try MySQL
+         - On failure: set POSTGRESQL
+         - finally: ALWAYS cleared context ← this was the bug
+         - determineCurrentLookupKey() then returned null → defaulted to MYSQL
 
-         This is where FAILOVER happens.
+         AFTER (fixed):
+         - Try MySQL directly on the raw DataSource (bypasses routing)
+         - On success: set MYSQL in context (for determineCurrentLookupKey)
+         - On failure: set POSTGRESQL in context (persists for JPA routing)
+         - Only clear on total failure (both DBs down)
         */
         @Override
         public Connection getConnection() throws SQLException {
 
             try {
-                DataSourceContextHolder.setDataSourceType(DataSourceType.MYSQL);
-
                 Connection connection = mysqlDataSource.getConnection();
-
+                DataSourceContextHolder.setDataSourceType(DataSourceType.MYSQL);
                 System.out.println("[Router] Connected to MySQL");
-
                 return connection;
 
             } catch (SQLException mysqlException) {
-
-                System.err.println("[Router] MySQL DOWN → Switching to PostgreSQL");
+                System.err.println("[Router] MySQL DOWN → Switching to PostgreSQL. Reason: "
+                        + mysqlException.getMessage());
 
                 try {
-                    DataSourceContextHolder.setDataSourceType(DataSourceType.POSTGRESQL);
-
                     Connection connection = postgresqlDataSource.getConnection();
-
+                    // CRITICAL: Set POSTGRESQL in context and DO NOT clear it.
+                    // determineCurrentLookupKey() needs this to stay set
+                    // so JPA routes subsequent operations to PostgreSQL correctly.
+                    DataSourceContextHolder.setDataSourceType(DataSourceType.POSTGRESQL);
                     System.out.println("[Router] Connected to PostgreSQL (Failover)");
-
                     return connection;
 
                 } catch (SQLException postgresqlException) {
-
+                    // Both DBs are down — safe to clear context now
+                    DataSourceContextHolder.clearDataSourceType();
                     throw new SQLException(
-                            "Both MySQL and PostgreSQL are down.",
-                            postgresqlException);
+                            "Both MySQL and PostgreSQL are unavailable.",
+                            postgresqlException
+                    );
                 }
+            }
+        }
 
-            } finally {
-                DataSourceContextHolder.clearDataSourceType();
+        /*
+         -------------------------------------------------------------------------
+         FIX 2: getConnection(username, password) — overloaded version
+         -------------------------------------------------------------------------
+         Hibernate/JPA sometimes calls this overloaded version instead of
+         the no-arg version. Without this override, it bypasses failover
+         entirely and hits the default AbstractRoutingDataSource implementation
+         which does NOT have our failover logic.
+        */
+        @Override
+        public Connection getConnection(String username, String password) throws SQLException {
+
+            try {
+                Connection connection = mysqlDataSource.getConnection(username, password);
+                DataSourceContextHolder.setDataSourceType(DataSourceType.MYSQL);
+                System.out.println("[Router] Connected to MySQL (with credentials)");
+                return connection;
+
+            } catch (SQLException mysqlException) {
+                System.err.println("[Router] MySQL DOWN → Switching to PostgreSQL (with credentials). Reason: "
+                        + mysqlException.getMessage());
+
+                try {
+                    Connection connection = postgresqlDataSource.getConnection(username, password);
+                    DataSourceContextHolder.setDataSourceType(DataSourceType.POSTGRESQL);
+                    System.out.println("[Router] Connected to PostgreSQL (Failover, with credentials)");
+                    return connection;
+
+                } catch (SQLException postgresqlException) {
+                    DataSourceContextHolder.clearDataSourceType();
+                    throw new SQLException(
+                            "Both MySQL and PostgreSQL are unavailable.",
+                            postgresqlException
+                    );
+                }
             }
         }
     }
