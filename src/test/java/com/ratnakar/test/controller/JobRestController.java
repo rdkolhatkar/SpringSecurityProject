@@ -1,8 +1,8 @@
-package com.ratnakar.security.controller;
+package com.ratnakar.test.controller;
 
 
-import com.ratnakar.security.entity.JobPostData;
-import com.ratnakar.security.service.JobCodeApplicationService;
+import com.ratnakar.test.entity.JobPostData;
+import com.ratnakar.test.service.JobCodeApplicationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

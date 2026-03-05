@@ -1,7 +1,7 @@
-package com.ratnakar.security.repository;
+package com.ratnakar.test.repository;
 
 
-import com.ratnakar.security.entity.JobPostData;
+import com.ratnakar.test.entity.JobPostData;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;

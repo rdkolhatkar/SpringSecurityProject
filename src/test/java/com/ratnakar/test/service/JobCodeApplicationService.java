@@ -1,10 +1,10 @@
-package com.ratnakar.security.service;
+package com.ratnakar.test.service;
 
-import com.ratnakar.security.repository.JobCodeRepository;
+import com.ratnakar.test.repository.JobCodeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.ratnakar.security.entity.JobPostData;
+import com.ratnakar.test.entity.JobPostData;
 
 import java.util.List;
 

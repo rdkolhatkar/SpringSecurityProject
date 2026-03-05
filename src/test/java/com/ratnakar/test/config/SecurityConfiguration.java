@@ -1,4 +1,4 @@
-package com.ratnakar.security.config;
+package com.ratnakar.test.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 // Used to inject required beans automatically.
@@ -56,8 +56,8 @@ import org.springframework.security.web.SecurityFilterChain;
  Without this:
  Security will not work.
 */
-//@Configuration
-//@EnableWebSecurity
+@Configuration
+@EnableWebSecurity
 public class SecurityConfiguration {
 
     /*
@@ -70,7 +70,7 @@ public class SecurityConfiguration {
 
      Spring Security will use this to load user from database.
     */
-//    @Autowired
+    @Autowired
     private UserDetailsService userDetailsAuthenticationService;
 
     /*
@@ -92,7 +92,7 @@ public class SecurityConfiguration {
 
      This replaces old WebSecurityConfigurerAdapter (deprecated).
     */
-//    @Bean
+    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
         /*
@@ -180,7 +180,7 @@ public class SecurityConfiguration {
         - Compares password using PasswordEncoder
         - If correct → authentication success
     */
-//    @Bean
+    @Bean
     public AuthenticationProvider authenticationProvider(){
 
         DaoAuthenticationProvider daoAuthenticationProvider =
@@ -227,7 +227,7 @@ public class SecurityConfiguration {
      12 = strength factor
      Higher value = more secure but slower.
     */
-//    @Bean
+    @Bean
     public BCryptPasswordEncoder passwordEncoder(){
         return new BCryptPasswordEncoder(12);
     }

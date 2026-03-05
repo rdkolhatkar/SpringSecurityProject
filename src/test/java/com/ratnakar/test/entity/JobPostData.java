@@ -1,4 +1,4 @@
-package com.ratnakar.security.entity;
+package com.ratnakar.test.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

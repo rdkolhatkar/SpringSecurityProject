@@ -1,0 +1,212 @@
+{
+  "info": {
+    "_postman_id": "f75ac34c-8251-49eb-8b9c-3294be29c15a",
+    "name": "SecureJobApplication",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19864596",
+    "_collection_link": "https://go.postman.co/collection/19864596-f75ac34c-8251-49eb-8b9c-3294be29c15a?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "GetAllJobs",
+      "protocolProfileBehavior": {
+        "disabledSystemHeaders": {}
+      },
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "admin_user",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "admin123",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/xml",
+            "type": "text",
+            "disabled": true
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:8092/jobPosts",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8092",
+          "path": [
+            "jobPosts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "GetJobById",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "admin_user",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "admin123",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8092/jobPost/2",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8092",
+          "path": [
+            "jobPost",
+            "2"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "addJobJSON",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "admin_user",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "admin123",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\r\n    \"postId\": 11,\r\n    \"postProfile\": \"Android Developer\",\r\n    \"postDescription\": \"Must have strong knowledge of Android SDK, Kotlin/Java, mobile app architecture, and REST API integration\",\r\n    \"requiredExperience\": 3,\r\n    \"postTechStack\": [\r\n        \"Android\",\r\n        \"Kotlin\",\r\n        \"Java\",\r\n        \"Android SDK\",\r\n        \"REST APIs\"\r\n    ]\r\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8092/jobPosts/add",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8092",
+          "path": [
+            "jobPosts",
+            "add"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "updateJob",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "admin_user",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "admin123",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "PUT",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "  {\r\n        \"postId\": 1,\r\n        \"postProfile\": \"Python Developer\",\r\n        \"postDescription\": \"Must have strong knowledge of Pandas, OOPs and SDLC\",\r\n        \"requiredExperience\": 3,\r\n        \"postTechStack\": [\r\n            \"Python\"\r\n        ]\r\n    }",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "http://localhost:8092/jobPosts",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8092",
+          "path": [
+            "jobPosts"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "deleteJob",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            {
+              "key": "username",
+              "value": "admin_user",
+              "type": "string"
+            },
+            {
+              "key": "password",
+              "value": "admin123",
+              "type": "string"
+            }
+          ]
+        },
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "http://localhost:8092/jobPosts/1",
+          "protocol": "http",
+          "host": [
+            "localhost"
+          ],
+          "port": "8092",
+          "path": [
+            "jobPosts",
+            "1"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
