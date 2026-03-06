@@ -18,25 +18,45 @@ repositories {
 	mavenCentral()
 }
 
-configurations {
-	testImplementation.extendsFrom developmentOnly
+/*
+ * Custom SourceSet for third Spring Boot application
+ */
+sourceSets {
+	code {
+		java.srcDir 'src/code/java'
+		resources.srcDir 'src/code/resources'
+
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += output + compileClasspath
+	}
 }
 
+/*
+ * Extend dependencies so src/code can reuse main dependencies
+ */
+configurations {
+	codeImplementation.extendsFrom implementation
+	codeRuntimeOnly.extendsFrom runtimeOnly
+	codeAnnotationProcessor.extendsFrom annotationProcessor
+}
+
+/*
+ * Project Dependencies
+ */
 dependencies {
+
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.projectlombok:lombok'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	implementation 'com.mysql:mysql-connector-j'
 	implementation 'org.postgresql:postgresql'
-	// NEW: HikariCP is included transitively via spring-boot-starter-data-jpa,
-	// but listed explicitly here for clarity since we are configuring two
-	// HikariCP pools (MySQL primary + PostgreSQL failover) in DataSourceConfig.
 	implementation 'com.zaxxer:HikariCP'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+
 
 	testCompileOnly 'org.projectlombok:lombok'
 	testAnnotationProcessor 'org.projectlombok:lombok'
@@ -48,16 +68,67 @@ dependencies {
 	testImplementation 'org.postgresql:postgresql'
 	testImplementation 'com.zaxxer:HikariCP'
 	testImplementation 'org.springframework.boot:spring-boot-devtools'
+
 }
 
+/*
+ * Encoding
+ */
 tasks.withType(JavaCompile) {
 	options.encoding = 'UTF-8'
 }
 
+/*
+ * JUnit Platform
+ */
 tasks.named('test') {
 	useJUnitPlatform()
 }
 
+/*
+ * Default BootRun configuration
+ */
 bootRun {
 	jvmArgs = ['-Dfile.encoding=UTF-8']
 }
+
+/*
+ * Run Spring Boot app from src/main
+ */
+tasks.register('runMainApp', org.springframework.boot.gradle.tasks.run.BootRun) {
+	group = "application"
+	description = "Run Spring Boot app from src/main"
+
+	classpath = sourceSets.main.runtimeClasspath
+	mainClass = 'com.ratnakar.security.SpringSecurityProjectApplication'
+}
+
+/*
+ * Run Spring Boot app from src/test
+ */
+tasks.register('runTestApp', org.springframework.boot.gradle.tasks.run.BootRun) {
+	group = "application"
+	description = "Run Spring Boot app from src/test"
+
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = 'com.ratnakar.test.TestSpringSecurityProjectApplication'
+}
+
+/*
+ * Run Spring Boot app from src/code
+ */
+tasks.register('runCodeApp', org.springframework.boot.gradle.tasks.run.BootRun) {
+	group = "application"
+	description = "Run Spring Boot app from src/code"
+
+	classpath = sourceSets.code.runtimeClasspath
+	mainClass = 'com.ratnakar.CodeApplication'
+}
+
+/*
+ * Commands to run applications
+ *
+ * Run Main App  : ./gradlew runMainApp
+ * Run Test App  : ./gradlew runTestApp
+ * Run Code App  : ./gradlew runCodeApp
+ */
