@@ -1,0 +1,33 @@
+server:
+  port: 8090
+
+# =============================================
+# MySQL DataSource
+# =============================================
+spring:
+  application:
+    name: product-service
+  datasource:
+    url: jdbc:mysql://localhost:3306/product_details
+    username: root
+    password: Ratanlord@1409
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # =============================================
+  # JPA / Hibernate
+  # =============================================
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# =============================================
+# Logging
+# =============================================
+logging:
+  level:
+    org.springframework.security: INFO

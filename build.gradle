@@ -69,6 +69,21 @@ dependencies {
 	testImplementation 'com.zaxxer:HikariCP'
 	testImplementation 'org.springframework.boot:spring-boot-devtools'
 
+
+	codeRuntimeOnly 'org.projectlombok:lombok'
+	codeImplementation 'org.springframework.boot:spring-boot-starter-security'
+	codeImplementation 'org.springframework.boot:spring-boot-starter-web'
+	codeImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	codeImplementation 'org.springframework.boot:spring-boot-starter-actuator'
+	codeImplementation 'org.springframework.boot:spring-boot-starter-validation'
+	codeImplementation 'com.mysql:mysql-connector-j'
+	codeImplementation 'org.postgresql:postgresql'
+	codeImplementation 'com.zaxxer:HikariCP'
+	codeImplementation 'org.slf4j:slf4j-api'
+	codeImplementation 'org.projectlombok:lombok'
+	codeImplementation 'org.springframework.boot:spring-boot-configuration-processor'
+	codeImplementation 'org.springframework.boot:spring-boot-devtools'
+
 }
 
 /*
@@ -83,6 +98,10 @@ tasks.withType(JavaCompile) {
  */
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.withType(ProcessResources) {
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
 /*

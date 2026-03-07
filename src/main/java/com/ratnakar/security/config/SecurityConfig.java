@@ -33,7 +33,8 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.csrf(customizer -> customizer.disable());
-        httpSecurity.authorizeHttpRequests(request -> request.anyRequest().authenticated());
+        httpSecurity.authorizeHttpRequests(request -> request.requestMatchers("/user/register").permitAll().anyRequest().authenticated());
+        // request.requestMatchers("/user/register") is used to identify the /user/register API so Spring Security can allow anyone to access it without login.
         // httpSecurity.formLogin(Customizer.withDefaults());
         // As we have disabled the "formLogin" and we are using the "httpBasic", When hitting the endpoint on browser we will not get the login form instead we will get the login popup where we have to pass our username and password
         httpSecurity.httpBasic(Customizer.withDefaults());

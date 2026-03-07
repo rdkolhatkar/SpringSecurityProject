@@ -1,0 +1,46 @@
+-- ============================================================
+--  CREATE DATABASE
+-- ============================================================
+CREATE DATABASE IF NOT EXISTS product_details;
+USE product_details;
+
+-- ============================================================
+--  USERS TABLE
+--  Stores registered users with BCrypt-hashed passwords
+-- ============================================================
+CREATE TABLE IF NOT EXISTS users (
+    id          BIGINT          NOT NULL AUTO_INCREMENT,
+    username    VARCHAR(100)    NOT NULL,
+    password    VARCHAR(255)    NOT NULL,   -- BCrypt hash (e.g. $2a$10$...)
+    role        VARCHAR(50)     NOT NULL    DEFAULT 'ROLE_USER',
+    created_at  TIMESTAMP                   DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_users         PRIMARY KEY (id),
+    CONSTRAINT uq_users_username UNIQUE      (username)
+);
+
+-- ============================================================
+--  PRODUCTS TABLE
+--  Stores product details managed via the Product Service
+-- ============================================================
+CREATE TABLE IF NOT EXISTS products (
+    product_id      BIGINT          NOT NULL AUTO_INCREMENT,
+    product_name    VARCHAR(200)    NOT NULL,
+    product_details TEXT,
+    price           DECIMAL(10, 2)  NOT NULL,
+    quantity        INT             NOT NULL DEFAULT 0,
+    created_at      TIMESTAMP                DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP                DEFAULT CURRENT_TIMESTAMP
+                                             ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_products          PRIMARY KEY (product_id),
+    CONSTRAINT chk_price_positive   CHECK (price    >  0),
+    CONSTRAINT chk_qty_non_negative CHECK (quantity >= 0)
+);
+
+-- ============================================================
+--  VERIFY — show both tables
+-- ============================================================
+SHOW TABLES;
+DESC users;
+DESC products;
