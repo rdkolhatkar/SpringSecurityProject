@@ -3,6 +3,7 @@ package com.ratnakar.code.config;
 
 import com.ratnakar.code.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,6 +18,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * Security configuration:
@@ -37,6 +39,9 @@ public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
 
+    @Autowired
+    private JwtAuthFilter jwtAuthFilter;
+
     // ─────────────────────────────────────────────
     //  BCryptPasswordEncoder bean
     // ─────────────────────────────────────────────
@@ -49,11 +54,11 @@ public class SecurityConfig {
     //  DaoAuthenticationProvider wires our
     //  UserDetailsService + BCrypt encoder together
     // ─────────────────────────────────────────────
+    // ✅ Fixed - constructor-based (Spring Security 6.x modern approach)
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService); // ✅ constructor injection
+        provider.setPasswordEncoder(passwordEncoder());  // ✅ still needed, no constructor alternative
         return provider;
     }
 
@@ -78,6 +83,7 @@ public class SecurityConfig {
             // Stateless — no HTTP session stored server-side
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(jwtAuthFilter,UsernamePasswordAuthenticationFilter.class)
 
             .authorizeHttpRequests(auth -> auth
                 // ── PUBLIC endpoints ──────────────────────────────
