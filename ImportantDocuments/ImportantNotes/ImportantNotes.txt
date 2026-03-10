@@ -11,7 +11,8 @@ JWT Token:
    JWT.IO allows you to decode, verify and generate JWT
 -> JWT encryption and decryption algorithms website : https://www.jwt.io/
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-Google Cloud Console SetUp
+Google Cloud Console SetUp and GitHub Console SetUp for OAuth 2.0
 1) Navigate to website "https://console.cloud.google.com/"
 2) Click on User menu ☰ icon -> Menu panel slides open -> Click on "API's and services" -> Then click on 'Credentials'
-3)
+3) For google OAuth2, refer the images from "ImportantDocuments/OAuth2GoogleSetUpImages" and for github OAuth2 refer the images from "ImportantDocuments/OAuth2GitHubSetUpImages"
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
