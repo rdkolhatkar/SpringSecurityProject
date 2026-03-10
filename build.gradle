@@ -29,6 +29,13 @@ sourceSets {
 		compileClasspath += sourceSets.main.output
 		runtimeClasspath += output + compileClasspath
 	}
+	app {
+		java.srcDir 'src/app/java'
+		resources.srcDir 'src/app/resources'
+
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += output + compileClasspath
+	}
 }
 
 /*
@@ -38,6 +45,10 @@ configurations {
 	codeImplementation.extendsFrom implementation
 	codeRuntimeOnly.extendsFrom runtimeOnly
 	codeAnnotationProcessor.extendsFrom annotationProcessor
+
+	appImplementation.extendsFrom implementation
+	appRuntimeOnly.extendsFrom runtimeOnly
+	appAnnotationProcessor.extendsFrom annotationProcessor
 }
 
 /*
@@ -89,6 +100,22 @@ dependencies {
 	codeImplementation 'org.projectlombok:lombok'
 	codeImplementation 'org.springframework.boot:spring-boot-configuration-processor'
 	codeImplementation 'org.springframework.boot:spring-boot-devtools'
+
+	appRuntimeOnly 'org.projectlombok:lombok'
+	appImplementation 'org.springframework.boot:spring-boot-starter-security'
+	appImplementation 'org.springframework.boot:spring-boot-starter-web'
+	appImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	appImplementation 'org.springframework.boot:spring-boot-starter-actuator'
+	appImplementation 'org.springframework.boot:spring-boot-starter-validation'
+	appImplementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+	appImplementation 'org.springframework.security:spring-security-oauth2-client'
+	appImplementation 'com.mysql:mysql-connector-j'
+	appImplementation 'org.postgresql:postgresql'
+	appImplementation 'com.zaxxer:HikariCP'
+	appImplementation 'org.slf4j:slf4j-api'
+	appImplementation 'org.projectlombok:lombok'
+	appImplementation 'org.springframework.boot:spring-boot-configuration-processor'
+	appImplementation 'org.springframework.boot:spring-boot-devtools'
 
 }
 
@@ -147,7 +174,18 @@ tasks.register('runCodeApp', org.springframework.boot.gradle.tasks.run.BootRun) 
 	description = "Run Spring Boot app from src/code"
 
 	classpath = sourceSets.code.runtimeClasspath
-	mainClass = 'com.ratnakar.CodeApplication'
+	mainClass = 'com.ratnakar.code.ProductServiceApplication'
+}
+
+/*
+ * Run Spring Boot app from src/app
+ */
+tasks.register('runApp', org.springframework.boot.gradle.tasks.run.BootRun) {
+	group = "application"
+	description = "Run Spring Boot app from src/code"
+
+	classpath = sourceSets.code.runtimeClasspath
+	mainClass = 'com.ratnakar.oauth.SpringBootOauthApp'
 }
 
 /*
@@ -156,4 +194,5 @@ tasks.register('runCodeApp', org.springframework.boot.gradle.tasks.run.BootRun) 
  * Run Main App  : ./gradlew runMainApp
  * Run Test App  : ./gradlew runTestApp
  * Run Code App  : ./gradlew runCodeApp
+ * Run App  : ./gradlew runApp
  */

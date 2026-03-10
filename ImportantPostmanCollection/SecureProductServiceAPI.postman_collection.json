@@ -1,0 +1,996 @@
+{
+  "info": {
+    "_postman_id": "0761c9c2-4bc5-467b-86cd-4915b11a408d",
+    "name": "SecureProductServiceAPI",
+    "description": "Complete Postman collection for testing the Spring Boot Product Service with Basic Auth.\n\n**Setup:**\n1. Run schema.sql in MySQL\n2. Start the Spring Boot app on port 8080\n3. First run 'Register User', then use those credentials for protected endpoints.\n\n**Auth Rules:**\n- GET /api/products → Public (no auth)\n- POST /api/auth/register → Public (no auth)\n- POST / PUT / DELETE /api/products → Basic Auth required",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "19864596",
+    "_collection_link": "https://go.postman.co/collection/19864596-0761c9c2-4bc5-467b-86cd-4915b11a408d?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has success = true', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Response contains username', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data.username).to.eql(pm.collectionVariables.get('username'));",
+                  "});",
+                  "",
+                  "pm.test('Response contains user id', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data.id).to.be.a('number');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registers a new user. Password is stored as a BCrypt hash in the DB.\n\n✅ PUBLIC — no credentials required.\n\n**Try duplicate username** to see the 409 Conflict response."
+          },
+          "response": []
+        },
+        {
+          "name": "Register User — Duplicate (Expect 409)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 409 Conflict', function () {",
+                  "    pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('Response has success = false', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"admin\",\n    \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Sends the same username again.\n\n❌ Expects 409 Conflict — username already taken."
+          },
+          "response": []
+        },
+        {
+          "name": "Register User — Validation Error (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation errors present', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "    pm.expect(json.data).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"username\": \"ab\",\n    \"password\": \"123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Username too short (< 3 chars), password too short (< 6 chars).\n\n❌ Expects 400 Bad Request with field-level validation errors."
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"username\": \"admin\",\r\n    \"password\": \"admin123\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "User registration endpoint — publicly accessible, no credentials required."
+    },
+    {
+      "name": "Products — Public (No Auth)",
+      "item": [
+        {
+          "name": "Get All Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has success = true', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "});",
+                  "",
+                  "pm.test('Data is an array', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data).to.be.an('array');",
+                  "});",
+                  "",
+                  "pm.test('Response time < 2000ms', function () {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "description": "Returns all products in the database.\n\n✅ PUBLIC — no credentials required."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Product data has required fields', function () {",
+                  "    var json = pm.response.json();",
+                  "    var product = json.data;",
+                  "    pm.expect(product).to.have.property('productId');",
+                  "    pm.expect(product).to.have.property('productName');",
+                  "    pm.expect(product).to.have.property('price');",
+                  "    pm.expect(product).to.have.property('quantity');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090/api/products/{{productId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Returns a single product by its ID.\n\n✅ PUBLIC — no credentials required.\n\nChange {{productId}} collection variable to test different IDs."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product by ID — Not Found (Expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('Error message present', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "    pm.expect(json.message).to.include('not found');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090/api/products/99999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "99999"
+              ]
+            },
+            "description": "Requests a product ID that does not exist.\n\n❌ Expects 404 Not Found."
+          },
+          "response": []
+        }
+      ],
+      "description": "GET endpoints are publicly accessible — no Authorization header needed."
+    },
+    {
+      "name": "Products — Protected (Basic Auth)",
+      "item": [
+        {
+          "name": "Add Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Product created with correct data', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "    pm.expect(json.data.productName).to.eql('Wireless Keyboard');",
+                  "    pm.expect(json.data.price).to.eql(79.99);",
+                  "    pm.expect(json.data.quantity).to.eql(100);",
+                  "});",
+                  "",
+                  "pm.test('Product has an assigned ID', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data.productId).to.be.a('number');",
+                  "    // Save for use in Update / Delete requests",
+                  "    pm.collectionVariables.set('productId', json.data.productId);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiIsImlhdCI6MTc3MzA2MDA1OCwiZXhwIjoxNzczMDYwMjM4fQ.pO_irceFLt-x4NCxdYVczviVDYr3k7dikNlPsvqQr3s",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"Wireless Keyboard\",\n    \"productDetails\": \"Compact wireless keyboard with RGB backlight and 2.4GHz receiver\",\n    \"price\": 79.99,\n    \"quantity\": 100\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "description": "Adds a new product to the database.\n\n🔒 PROTECTED — requires valid Basic Auth.\n\nThe test script automatically saves the returned productId into the {{productId}} collection variable for use in Update and Delete requests."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Product — Wrong Credentials (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "wronguser",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "wrongpassword",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"Hacked Product\",\n    \"productDetails\": \"This should not be added\",\n    \"price\": 9.99,\n    \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "description": "Sends wrong username and password.\n\n❌ Expects 401 Unauthorized — product must NOT be added."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Product — No Auth Header (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"No Auth Product\",\n    \"productDetails\": \"This should be rejected\",\n    \"price\": 19.99,\n    \"quantity\": 5\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "description": "Sends the request with NO Authorization header at all.\n\n❌ Expects 401 Unauthorized."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Product — Validation Error (Expect 400)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 400 Bad Request', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation errors present in response', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(false);",
+                  "    pm.expect(json.data).to.be.an('object');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"\",\n    \"productDetails\": \"Missing name, negative price\",\n    \"price\": -5.00,\n    \"quantity\": -10\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products"
+              ]
+            },
+            "description": "Sends blank productName, negative price, and negative quantity.\n\n❌ Expects 400 Bad Request with field-level validation messages."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Product updated with new values', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "    pm.expect(json.data.productName).to.eql('Wireless Keyboard Pro');",
+                  "    pm.expect(json.data.price).to.eql(99.99);",
+                  "    pm.expect(json.data.quantity).to.eql(75);",
+                  "});",
+                  "",
+                  "pm.test('updatedAt is present', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.data.updatedAt).to.not.be.null;",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"Wireless Keyboard Pro\",\n    \"productDetails\": \"Upgraded: RGB backlight, 2.4GHz, rechargeable battery\",\n    \"price\": 99.99,\n    \"quantity\": 75\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products/{{productId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Updates all fields of an existing product.\n\n🔒 PROTECTED — requires valid Basic Auth.\n\nUses {{productId}} saved by the 'Add Product' test script."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product — Wrong Credentials (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "hacker",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "badpass",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"Tampered Product\",\n    \"productDetails\": \"Should not update\",\n    \"price\": 0.01,\n    \"quantity\": 999\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products/{{productId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Tries to update with wrong credentials.\n\n❌ Expects 401 Unauthorized — product must NOT be updated."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product — Not Found (Expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"productName\": \"Ghost Product\",\n    \"productDetails\": \"ID does not exist\",\n    \"price\": 9.99,\n    \"quantity\": 1\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8090/api/products/99999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "99999"
+              ]
+            },
+            "description": "Valid credentials but the product ID does not exist.\n\n❌ Expects 404 Not Found."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 200 OK', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Success message returned', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.success).to.eql(true);",
+                  "    pm.expect(json.message).to.include('deleted');",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090/api/products/{{productId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Deletes a product by ID.\n\n🔒 PROTECTED — requires valid Basic Auth.\n\nUses {{productId}} saved by the 'Add Product' test script."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product — Wrong Credentials (Expect 401)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 401 Unauthorized', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "nobody",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "nope123",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090/api/products/{{productId}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Tries to delete with wrong credentials.\n\n❌ Expects 401 Unauthorized — product must NOT be deleted."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Product — Not Found (Expect 404)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status code is 404 Not Found', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "basic",
+              "basic": [
+                {
+                  "key": "username",
+                  "value": "{{username}}",
+                  "type": "string"
+                },
+                {
+                  "key": "password",
+                  "value": "{{password}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090/api/products/99999",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8090",
+              "path": [
+                "api",
+                "products",
+                "99999"
+              ]
+            },
+            "description": "Valid credentials but product ID does not exist.\n\n❌ Expects 404 Not Found."
+          },
+          "response": []
+        }
+      ],
+      "description": "POST, PUT, DELETE require valid Basic Auth credentials.\n\nCredentials are pulled from collection variables:\n- username: {{username}}\n- password: {{password}}\n\nWrong credentials → 401 Unauthorized."
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "username",
+      "value": "john",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "secret123",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "1",
+      "type": "string"
+    }
+  ]
+}
